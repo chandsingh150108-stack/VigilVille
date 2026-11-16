@@ -32,7 +32,7 @@ NO_EVIDENCE_TEXT = (
     "receipts, call logs, etc.) to the Investigating Officer as and when required."
 )
 HAS_EVIDENCE_TEXT = (
-    "Electronic evidence was uploaded with the online report on ScamAlert. "
+    "Electronic evidence was uploaded with the online report on VigilVille.com. "
     "The complainant shall produce all available material (screenshots, messages, "
     "emails, payment receipts, call logs, etc.) before the Investigating Officer "
     "as and when required."
@@ -542,7 +542,7 @@ def generate_complaint(data: dict, today=None) -> bytes:
 
     closing = doc.add_paragraph()
     closing_run = closing.add_run(
-        "Prepared by the complainant using ScamAlert (https://scamalert.in).")
+        "Prepared by the complainant using VigilVille.com (https://vigilville.com).")
     closing_run.italic = True
     closing_run.font.name = BASE_FONT
     closing_run.font.size = Pt(12)

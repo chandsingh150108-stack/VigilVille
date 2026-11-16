@@ -1,6 +1,6 @@
 -- ============================================================
 -- ScamAlert — Schema v1.0
--- 20 tables, CHECK constraints, DEFAULT fallbacks, indexes
+-- 18 tables, CHECK constraints, DEFAULT fallbacks, indexes
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS scamalert
@@ -338,70 +338,7 @@ CREATE TABLE IF NOT EXISTS platform_config (
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------
--- 18. website_discussions
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS website_discussions (
-  id               BINARY(16)   PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
-  website_url_id   BINARY(16)   NOT NULL,
-  author_id        BINARY(16)   NOT NULL,
-  title            VARCHAR(200) NOT NULL,
-  body             TEXT         NOT NULL,
-  is_pinned        BOOLEAN      NOT NULL DEFAULT FALSE,
-  is_locked        BOOLEAN      NOT NULL DEFAULT FALSE,
-  is_deleted       BOOLEAN      NOT NULL DEFAULT FALSE,
-  upvotes          INT          NOT NULL DEFAULT 0,
-  downvotes        INT          NOT NULL DEFAULT 0,
-  reply_count      INT          NOT NULL DEFAULT 0,
-  last_activity_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at       TIMESTAMP    NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT fk_disc_website FOREIGN KEY (website_url_id) REFERENCES website_urls(id),
-  CONSTRAINT fk_disc_author  FOREIGN KEY (author_id)      REFERENCES users(id),
-  CHECK (upvotes >= 0),
-  CHECK (downvotes >= 0),
-  CHECK (reply_count >= 0)
-) ENGINE=InnoDB;
-
--- ------------------------------------------------------------
--- 19. discussion_replies (self-referential, max depth 5)
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS discussion_replies (
-  id            BINARY(16)  PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
-  discussion_id BINARY(16)  NOT NULL,
-  author_id     BINARY(16)  NOT NULL,
-  parent_id     BINARY(16)  NULL,
-  body          TEXT        NOT NULL,
-  is_deleted    BOOLEAN     NOT NULL DEFAULT FALSE,
-  upvotes       INT         NOT NULL DEFAULT 0,
-  downvotes     INT         NOT NULL DEFAULT 0,
-  depth         INT         NOT NULL DEFAULT 0,
-  created_at    TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    TIMESTAMP   NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT fk_replies_discussion FOREIGN KEY (discussion_id) REFERENCES website_discussions(id),
-  CONSTRAINT fk_replies_author     FOREIGN KEY (author_id)     REFERENCES users(id),
-  CONSTRAINT fk_replies_parent     FOREIGN KEY (parent_id)     REFERENCES discussion_replies(id),
-  CHECK (depth >= 0 AND depth <= 5),
-  CHECK (upvotes >= 0),
-  CHECK (downvotes >= 0)
-) ENGINE=InnoDB;
-
--- ------------------------------------------------------------
--- 20. discussion_votes
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS discussion_votes (
-  id          BINARY(16)  PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
-  user_id     BINARY(16)  NOT NULL,
-  target_type ENUM('discussion','reply') NOT NULL,
-  target_id   BINARY(16)  NOT NULL,
-  vote_value  TINYINT     NOT NULL,
-  created_at  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_dvotes_user FOREIGN KEY (user_id) REFERENCES users(id),
-  UNIQUE KEY uk_dvotes_user_target (user_id, target_type, target_id),
-  CHECK (vote_value IN (-1, 1))
-) ENGINE=InnoDB;
-
--- ------------------------------------------------------------
--- 21. comment_votes
+-- 18. comment_votes
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS comment_votes (
   id          BINARY(16)  PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),

@@ -17,15 +17,14 @@ Flask 3 (Python, App Router-style blueprints) | MySQL 8.4 | Raw SQL (`mysql-conn
 
 ---
 
-## Database (20 tables, 20+ objects)
+## Database (18 tables, 20+ objects)
 
 `sql/` is immutable, except the approved cleanup in `sql_saves/`-backed thinning (unused views/proc/function removed; counts below are current). Python adapts to the DB, never the reverse. All tables 3NF. UUIDs as `BINARY(16)` via `UUID_TO_BIN()`. CHECK constraints on all numeric bounds.
 
 **Core:** users, categories, website_urls, fraud_reports, report_evidence, verification_votes
-**Support:** tags, report_tags, report_comments, report_history, risk_score_breakdowns, appeals, appeal_evidence, reputation_events, rate_limit_events, audit_events, platform_config
-**Forum:** website_discussions, discussion_replies, discussion_votes
+**Support:** tags, report_tags, report_comments, comment_votes, report_history, risk_score_breakdowns, appeals, appeal_evidence, reputation_events, rate_limit_events, audit_events, platform_config
 
-**Objects:** 5 views (multi-table JOINs), 5 functions, 7 triggers, 5 procedures
+**Objects:** 5 views (multi-table JOINs), 5 functions, 9 triggers, 5 procedures
 
 ---
 
@@ -51,7 +50,7 @@ docker compose up -d --build web   # MySQL + Flask (rebuild after backend/fronte
 pip install -r requirements.txt
 python scripts/db_setup.py         # Tables + seed from frozen sql/01-06, then verification counts
 python -m flask --app backend.app run --host 0.0.0.0 --port 5000
-python -m pytest backend/tests -q  # pytest, 58 passed + 3 skipped (DB tests need SCAMALERT_TEST_DB=1)
+python -m pytest backend/tests -q  # pytest, 120 passed + 56 skipped (DB tests need SCAMALERT_TEST_DB=1)
 ```
 
 ---

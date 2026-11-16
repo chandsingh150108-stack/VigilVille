@@ -107,7 +107,6 @@ def create_app():
         comment,
         comment_vote,
         complaint_route,
-        discussions,
         evidence,
         history,
         report_detail,
@@ -131,7 +130,6 @@ def create_app():
     app.register_blueprint(websites.bp)
     app.register_blueprint(evidence.bp)
     app.register_blueprint(appeals.bp)
-    app.register_blueprint(discussions.bp)
     app.register_blueprint(admin.bp)
 
     # Static page routes (Flask-serves-static).
@@ -156,14 +154,6 @@ def create_app():
     @app.get("/search")
     def _search():
         return app.send_static_file("search.html")
-
-    @app.get("/discussions")
-    def _discussions():
-        return app.send_static_file("discussions.html")
-
-    @app.get("/discussions/<did>")
-    def _discussion_page(did):
-        return app.send_static_file("discussion-detail.html")
 
     @app.get("/users")
     def _users():
@@ -203,8 +193,7 @@ def create_app():
     def _page(page):
         allowed = {
             "index", "reports", "report-detail", "report-new", "search",
-            "discussions", "discussion-detail", "users", "user-detail",
-            "website-detail", "login", "signup", "help",
+            "users", "user-detail", "website-detail", "login", "signup", "help",
             "admin-reports", "admin-appeals", "admin-config",
         }
         if page not in allowed:

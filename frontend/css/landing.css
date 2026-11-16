@@ -1,0 +1,381 @@
+/* 1. Tokens ---------------------------------------------------------------- */
+:root { --header-h: 3.5rem; }
+@media (max-width: 640px) {
+  :root { --header-h: 6.75rem; }
+}
+
+.landing-top,
+.landing-screen {
+  --landing-ember: var(--primary);
+  --landing-action-hover: #2b0b03;
+}
+
+[data-theme="dark"] .landing-top,
+[data-theme="dark"] .landing-screen {
+  --landing-ember: #fb923c;
+  --landing-action-hover: #fde68a;
+}
+
+/* 2. First screen / statement --------------------------------------------- */
+header.top.landing-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: transparent;
+  border-bottom: 0;
+}
+
+.landing-screen--statement {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.landing-screen--statement::before,
+.landing-screen--statement::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.landing-screen--statement::before {
+  z-index: -2;
+  background-image: url("/assets/landing-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  filter: saturate(0.65) contrast(0.95) blur(1.5px);
+  transform: scale(1.03);
+}
+
+.landing-screen--statement::after {
+  z-index: -1;
+  background: linear-gradient(100deg, rgba(255, 250, 245, 0.97) 0%, rgba(255, 250, 245, 0.9) 42%, rgba(255, 250, 245, 0.64) 100%);
+}
+
+[data-theme="dark"] .landing-screen--statement::after {
+  background: linear-gradient(100deg, rgba(28, 25, 23, 0.97) 0%, rgba(28, 25, 23, 0.9) 42%, rgba(28, 25, 23, 0.66) 100%);
+}
+
+.landing-wrap {
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding-inline: 1rem;
+}
+
+.landing-statement-wrap {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: calc(var(--header-h, 3.5rem) + clamp(2.5rem, 10vh, 8rem));
+  padding-bottom: 1.5rem;
+}
+
+.loss {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.loss--static { display: none; }
+html:not(.js) .loss--animated { display: none; }
+html:not(.js) .loss--static { display: block; }
+
+.loss__lede {
+  font-size: clamp(0.95rem, 1.1vw, 1.1rem);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  margin-bottom: clamp(0.75rem, 2.2vh, 1.75rem);
+}
+
+.loss__amount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.12em;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: clamp(2.4rem, 14.5vw, 13.5rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  transform-origin: left bottom;
+}
+
+.loss__value {
+  color: var(--landing-ember);
+  font-variant-numeric: tabular-nums;
+}
+
+.loss__crore {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.loss__unit {
+  margin-top: clamp(0.75rem, 1.6vh, 1.25rem);
+  max-width: 34ch;
+  font-size: clamp(1.2rem, 2.4vw, 2rem);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.landing-scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 2rem;
+  opacity: 0.6;
+}
+
+.landing-scroll__line {
+  width: 1px;
+  height: 2rem;
+  background: var(--text-muted);
+}
+
+.landing-scroll__arrow {
+  width: 8px;
+  height: 8px;
+  margin-left: -3.5px;
+  border-right: 1px solid var(--text-muted);
+  border-bottom: 1px solid var(--text-muted);
+  transform: rotate(45deg);
+}
+
+/* 3. Count-up + growth ----------------------------------------------------- */
+.loss--animated .loss__amount {
+  transform: scale(0.5);
+  will-change: transform;
+}
+
+/* 4. Second screen / brand ------------------------------------------------- */
+.landing-screen--brand {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  text-align: center;
+}
+
+.landing-brand {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 1rem;
+}
+
+.landing-wordmark {
+  margin: 0;
+  font-size: clamp(2.25rem, 9vw, 8rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.landing-wordmark .logo {
+  font-size: inherit;
+  letter-spacing: inherit;
+  color: var(--text);
+}
+
+.landing-tagline {
+  margin: clamp(1rem, 2vh, 1.5rem) 0 0;
+  max-width: 48ch;
+  font-size: clamp(1rem, 1.5vw, 1.35rem);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.landing-cta-row {
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding-inline: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* 5. Buttons --------------------------------------------------------------- */
+.landing-top .userbox > .btn,
+.landing-top #user-menu > .btn,
+.landing-cta-row .btn {
+  border-radius: 9999px;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.3rem;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-top .userbox > .btn,
+.landing-cta-row .btn:not(.landing-btn--outline) {
+  background: var(--text);
+  color: var(--bg);
+  border: 1px solid var(--text);
+}
+
+.landing-top .userbox > .btn:hover,
+.landing-cta-row .btn:not(.landing-btn--outline):hover {
+  background: var(--landing-action-hover);
+  color: var(--bg);
+  border-color: var(--landing-action-hover);
+}
+
+.landing-top #user-menu > .btn,
+.landing-btn--outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--text);
+}
+
+.landing-top #user-menu > .btn:hover,
+.landing-btn--outline:hover {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.landing-top nav.main a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--text);
+}
+
+.landing-top nav.main a:first-child {
+  padding-left: 0;
+}
+
+.landing-top nav.main a:hover {
+  color: var(--text);
+  background: var(--surface-alt);
+}
+
+.landing-top .theme-toggle {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.35rem;
+  border-radius: 9999px;
+}
+
+/* 6. Footer citation ------------------------------------------------------- */
+.landing-footer { margin-top: 0; }
+
+.landing-source {
+  max-width: 72ch;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+footer.bot .landing-source a {
+  margin-right: 0;
+  text-decoration: underline;
+}
+
+/* 7. Responsive ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  .landing-statement-wrap {
+    padding-top: calc(var(--header-h, 6.75rem) + clamp(2rem, 8vh, 3.5rem));
+  }
+
+  .landing-top .wrap {
+    row-gap: 0.5rem;
+  }
+
+  .landing-top .userbox {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .landing-top .userbox > .btn,
+  .landing-top #user-menu > .btn {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+  }
+
+  .landing-wordmark {
+    font-size: clamp(2rem, 11vw, 4rem);
+  }
+
+  .landing-tagline {
+    max-width: 26ch;
+  }
+
+  .landing-cta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-cta-row .btn {
+    width: 100%;
+  }
+
+  .landing-top .userbox > .btn,
+  .landing-top #user-menu > .btn {
+    min-height: 2.75rem;
+  }
+
+  .landing-top nav.main a {
+    min-height: 2.75rem;
+  }
+
+  .landing-top .theme-toggle {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-height: 620px) {
+  .landing-statement-wrap {
+    padding-top: calc(var(--header-h, 3.5rem) + 1.5rem);
+    padding-bottom: 1rem;
+  }
+
+  .loss__amount {
+    font-size: clamp(2.5rem, 14vh, 8rem);
+  }
+
+  .landing-scroll {
+    display: none;
+  }
+}
+
+/* 8. Screen-reader utility ------------------------------------------------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

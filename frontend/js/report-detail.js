@@ -29,9 +29,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     const votes = data.votes || [];
     const comments = data.comments || [];
     const me = await window.App.api("/api/me");
-    const isOwner = me.ok && me.data && me.data.user && me.data.user.id === r.reporter_id;
-    const isAdmin = me.ok && me.data && me.data.user && (me.data.user.role === 'admin' || me.data.user.role === 'moderator');
+    const viewer = me.ok && me.data && me.data.user ? me.data.user : null;
+    const isOwner = !!viewer && viewer.id === r.reporter_id;
+    const isAdmin = !!viewer && (viewer.role === 'admin' || viewer.role === 'moderator');
     const canDelete = isOwner || isAdmin;
+    const canVoteOnComments = !!viewer &&
+      (Number(viewer.reputation_score || 0) >= 40 ||
+       viewer.role === 'moderator' || viewer.role === 'admin');
+    const commentVoteHint = canVoteOnComments ? "" :
+      '<p class="small muted">Only trusted, expert, and moderator members can upvote or downvote comments.</p>';
 
     box.innerHTML =
       "<h1>" + window.App.escapeHtml(r.title) + "</h1>" +
@@ -48,23 +54,24 @@ document.addEventListener("DOMContentLoaded", async function () {
         window.App.escapeHtml(r.reporter_name || "") + "</a> " + window.App.tierPill(r.reporter_tier) + "</div>") +
       '<div class="card"><h3>Verify</h3><div id="vote-box"></div><div class="small muted">' + votes.length + " votes recorded</div></div>" +
       '<div class="card"><h3>Evidence</h3>' + ev + "</div>" +
-      '<div class="card"><h3>Comments (' + comments.length + ")</h3><div id='comments'>" +
+      '<div class="card"><h3>Comments (' + comments.length + ")</h3>" + commentVoteHint + "<div id='comments'>" +
       comments.map(function (c) {
         const up = c.upvotes || 0;
         const down = c.downvotes || 0;
         const userVote = c.user_vote || 0;
         const score = up - down;
-        const canVote = window.Auth && window.Auth.currentUser &&
-          ((window.Auth.currentUser.reputation_score >= 40) ||
-           window.Auth.currentUser.role === 'moderator' ||
-           window.Auth.currentUser.role === 'admin');
-        const voteBtns = canVote
+        const authorId = c.author_id || c.user_id;
+        const isOwnComment = !!viewer && !!authorId && String(authorId) === String(viewer.id);
+        const showVote = canVoteOnComments && !isOwnComment;
+        const scoreTitle = up + " upvotes, " + down + " downvotes";
+        const displayTitle = isOwnComment ? "You cannot vote on your own comment" : scoreTitle;
+        const voteBtns = showVote
           ? ('<div class="comment-votes">' +
-            '<button class="vote-btn ' + (userVote === 1 ? 'voted' : '') + '" data-cid="' + c.id + '" data-vote="1" title="Upvote">▲</button>' +
-            '<span class="vote-score">' + score + '</span>' +
-            '<button class="vote-btn ' + (userVote === -1 ? 'voted' : '') + '" data-cid="' + c.id + '" data-vote="-1" title="Downvote">▼</button>' +
+            '<button type="button" class="vote-btn ' + (userVote === 1 ? 'voted' : '') + '" data-cid="' + c.id + '" data-vote="1" title="Upvote" aria-label="Upvote comment" aria-pressed="' + (userVote === 1) + '">▲</button>' +
+            '<span class="vote-score" title="' + scoreTitle + '">' + score + '</span>' +
+            '<button type="button" class="vote-btn ' + (userVote === -1 ? 'voted' : '') + '" data-cid="' + c.id + '" data-vote="-1" title="Downvote" aria-label="Downvote comment" aria-pressed="' + (userVote === -1) + '">▼</button>' +
             '</div>')
-          : '<div class="comment-votes"><span class="vote-score">' + score + '</span></div>';
+          : '<div class="comment-votes"><span class="vote-score" title="' + displayTitle + '">' + score + '</span></div>';
         return '<div class="comment" data-cid="' + c.id + '"><div class="comment-header">' +
           '<strong>' + window.App.escapeHtml(c.user_name || "") + "</strong> " +
           window.App.tierPill(c.user_tier) + voteBtns + '</div>' +
@@ -121,9 +128,18 @@ document.addEventListener("DOMContentLoaded", async function () {
           const scoreEl = commentEl.querySelector(".vote-score");
           const upBtn = commentEl.querySelector('.vote-btn[data-vote="1"]');
           const downBtn = commentEl.querySelector('.vote-btn[data-vote="-1"]');
-          if (scoreEl) scoreEl.textContent = res.data.upvotes - res.data.downvotes;
-          if (upBtn) upBtn.classList.toggle("voted", res.data.user_vote === 1);
-          if (downBtn) downBtn.classList.toggle("voted", res.data.user_vote === -1);
+          if (scoreEl) {
+            scoreEl.textContent = res.data.upvotes - res.data.downvotes;
+            scoreEl.title = res.data.upvotes + " upvotes, " + res.data.downvotes + " downvotes";
+          }
+          if (upBtn) {
+            upBtn.classList.toggle("voted", res.data.user_vote === 1);
+            upBtn.setAttribute("aria-pressed", String(res.data.user_vote === 1));
+          }
+          if (downBtn) {
+            downBtn.classList.toggle("voted", res.data.user_vote === -1);
+            downBtn.setAttribute("aria-pressed", String(res.data.user_vote === -1));
+          }
         }
       } else {
         alert((res.data && res.data.error) || "Vote failed");

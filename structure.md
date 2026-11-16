@@ -29,11 +29,11 @@
 
 | File | Contents |
 |---|---|
-| `01_schema.sql` | 20 tables, all 3NF. Core: `users`, `categories`, `website_urls`, `fraud_reports`, `report_evidence`, `verification_votes`; support: `tags`, `report_tags`, `report_comments`, `report_history`, `risk_score_breakdowns`, `appeals`, `appeal_evidence`, `reputation_events`, `rate_limit_events`, `audit_events`, `platform_config`; forum: `website_discussions`, `discussion_replies`, `discussion_votes`. UUIDs as `BINARY(16)` (`UUID_TO_BIN()`), CHECK constraints on numeric bounds, FULLTEXT on `fraud_reports(title, description)`, indexes. |
+| `01_schema.sql` | 18 tables, all 3NF. Core: `users`, `categories`, `website_urls`, `fraud_reports`, `report_evidence`, `verification_votes`; support: `tags`, `report_tags`, `report_comments`, `report_history`, `risk_score_breakdowns`, `appeals`, `appeal_evidence`, `reputation_events`, `rate_limit_events`, `audit_events`, `platform_config`, `comment_votes`. UUIDs as `BINARY(16)` (`UUID_TO_BIN()`), CHECK constraints on numeric bounds, FULLTEXT on `fraud_reports(title, description)`, indexes. |
 | `02_seed_data.sql` | 10 categories, 15 users (+ `Anonymous` sentinel `00000000-...-000000000001`), 8 websites, ~13 reports, evidence, votes, tags. |
 | `03_views.sql` | 5 views (all read by the app): `v_report_full_details`, `v_website_risk_dashboard`, `v_user_reputation_leaderboard`, `v_pending_review_queue`, `v_appeal_resolution_tracker`. |
 | `04_functions.sql` | 5 functions: `fn_calculate_risk_score`, `fn_get_reputation_tier` (90 moderator / 70 expert / 40 trusted / 20 new / else newcomer), `fn_normalize_url`, `fn_check_rate_limit` (report_new 5, 20 if rep >= 40), `fn_determine_verification_stage`. |
-| `05_triggers.sql` | 7 triggers, incl. `trg_after_report_insert` (website/user counters + history), `trg_prevent_vote_manipulation` (voter rep >= 60, 20/day cap; one-vote-per-report via UNIQUE key). |
+| `05_triggers.sql` | 9 triggers, incl. `trg_after_report_insert` (website/user counters + history), `trg_prevent_vote_manipulation` (voter rep >= 60, 20/day cap; one-vote-per-report via UNIQUE key), `trg_comment_vote_integrity` (trusted+ comment votes, 50/day), `trg_after_comment_vote`. |
 | `06_procedures.sql` | 5 procedures: `sp_submit_fraud_report` (own rate check + event insert), `sp_process_verification_vote`, `sp_recalculate_all_risk_scores`, `sp_resolve_appeal`, `sp_update_reputation`. |
 | `07_acid_demo.sql` | ACID demonstration queries. |
 | `08_complex_joins.sql` | JOIN showcase queries. |
@@ -72,7 +72,7 @@
 | `intelligence/dns.py` / `ssl.py` / `whois.py` | DMARC/SPF/MX (dnspython), cert inspection (10s timeout), WHOIS + 24h cache (python-whois). All fail-closed to safe defaults. |
 | `evidence/handler.py` | `EVIDENCE_TYPES` weights, 10 MB cap, 11-MIME allowlist, SHA-256, `store_evidence()` → `/uploads/evidence/<reportId>/<uuid>.<ext>`, traversal guard. |
 
-### `backend/routes/` — 14 blueprints, 52 rules
+### `backend/routes/` — 14 blueprints, 47 rules
 
 | Module | Endpoints |
 |---|---|
@@ -87,10 +87,9 @@
 | `users.py` / `websites.py` | Leaderboard, profile (+reports+events), website risk dashboard |
 | `evidence.py` | `GET /api/evidence`, `POST /api/evidence/upload` (login; validation 400) |
 | `appeals.py` | List + appeal evidence |
-| `discussions.py` | List/create, replies, votes |
 | `admin.py` | Reports queue + bulk status, appeals resolve, config GET/PUT, recalculate-risk |
 
-### `backend/tests/` — pytest (58 passed, 3 skipped)
+### `backend/tests/` — pytest (120 passed, 56 skipped)
 
 | File | Coverage |
 |---|---|
@@ -111,7 +110,6 @@
 | `search.html` | `search.js` | Query page (`?q=`) |
 | `users.html` / `user-detail.html` | `users.js` / `user-detail.js` | Leaderboard / profile |
 | `website-detail.html` | `website.js` | Risk dashboard |
-| `discussions.html` / `discussion-detail.html` | `discussions.js` / `discussion-detail.js` | Forum list / thread |
 | `login.html` / `signup.html` | `auth.js` | Auth modal + session menu |
 | `help.html` | — | 1930 / NCRP / CERT-In resources |
 | `admin-reports.html` / `admin-appeals.html` / `admin-config.html` | `admin-*.js` | Moderation queue, appeal resolution, config editor |

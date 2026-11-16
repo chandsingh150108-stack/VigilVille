@@ -33,15 +33,15 @@ Uploads persist in the `scamalert_uploads` volume (container path `/app/uploads`
 ## Tests
 
 ```bash
-python -m pytest backend/tests -q        # 58 passed, 3 skipped
+python -m pytest backend/tests -q        # 120 passed, 56 skipped
 SCAMALERT_TEST_DB=1 python -m pytest backend/tests -q   # + live-MySQL integration tests
 ```
 
 ## Layout
 
 * `backend/` — Flask app factory, 14 route blueprints, services (auth, rate limit, audit, email stub, risk, intelligence, evidence, complaint DOCX)
-* `frontend/` — 16 static pages + `css/style.css` + per-page `js/*.js` (fetch, no bundler)
-* `sql/` — FROZEN, do not edit
+* `frontend/` — 14 static pages + `css/style.css` + per-page `js/*.js` (fetch, no bundler)
+* `sql/` — schema, seed, views, functions, triggers, and procedures (apply via `scripts/db_setup.py`)
 * `scripts/db_setup.py` — bootstrap from frozen SQL
 
 ## Behavior notes
@@ -49,7 +49,7 @@ SCAMALERT_TEST_DB=1 python -m pytest backend/tests -q   # + live-MySQL integrati
 * Auth: server sessions + bcrypt (7-day cookie). Reports and votes require login; comments allow guests (shown as "Anonymous"). Logged-in reporters may tick "Submit anonymously".
 * Search merges FULLTEXT matches with title/description/domain LIKE matches (deduplicated) — domain-only hits are never dropped.
 * Evidence: 10 MB cap, 11-type allowlist; validation failures are 400. Files viewable at their `/uploads/...` URLs with image thumbnails on the report page.
-* Rate limits (per hour, overridable via `platform_config`): reports 5, votes 20, comments 30, discussions 10. Flask checks, procedures record — one success costs one token; failed attempts cost nothing.
+* Rate limits (per hour, overridable via `platform_config`): reports 5, votes 20, comments 30. Flask checks, procedures record — one success costs one token; failed attempts cost nothing.
 * Category slugs in the report form must match `categories.slug` exactly.
 * Complaint download is DOCX (`GET /api/reports/<id>/complaint`) despite historic "PDF" naming.
 * Voting additionally requires reputation >= 60 (enforced by DB trigger) — new accounts cannot vote yet.

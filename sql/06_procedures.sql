@@ -340,6 +340,7 @@ END //
 -- 5. sp_update_reputation
 -- Update user reputation score and tier
 -- Insert reputation event for audit trail
+-- No result set: triggers cannot call procedures that return rows.
 -- ============================================================
 
 DELIMITER //
@@ -353,8 +354,6 @@ CREATE PROCEDURE sp_update_reputation(
   IN p_reference_id BINARY(16)
 )
 BEGIN
-  DECLARE v_new_score INT;
-
   -- Insert reputation event
   INSERT INTO reputation_events (id, user_id, delta, reason, reference_id)
   VALUES (UUID_TO_BIN(UUID()), p_user_id, p_delta, p_reason, p_reference_id);
@@ -364,10 +363,6 @@ BEGIN
   SET reputation_score = GREATEST(0, LEAST(100, reputation_score + p_delta)),
       reputation_tier = fn_get_reputation_tier(GREATEST(0, LEAST(100, reputation_score + p_delta)))
   WHERE id = p_user_id;
-
-  -- Return new score
-  SELECT reputation_score INTO v_new_score FROM users WHERE id = p_user_id;
-  SELECT v_new_score AS new_score;
 END //
 
 DELIMITER ;

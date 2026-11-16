@@ -1,6 +1,6 @@
 """Rate limiting. Python mirror of src/lib/rate-limit.ts.
 
-Defaults: report_new 5 / vote 20 / comment 30 / discussion 10 per hour.
+Defaults: report_new 5 / vote 20 / comment 30 per hour.
 Overridable via platform_config `rate_limit.<action>` (number or {limit}).
 Writes rate_limit_events on allowance. Never raises on config-read failure.
 """
@@ -13,7 +13,6 @@ DEFAULT_LIMITS = {
     "report_new": 5,
     "vote": 20,
     "comment": 30,
-    "discussion": 10,
 }
 
 

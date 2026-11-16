@@ -6,7 +6,7 @@ Creates:
 - 20 realistic, high-impact Indian fraud reports spanning all 10 categories
 - Authentic, crisp graphical evidence images (SMS screenshots, phishing portals,
   WhatsApp chats, UPI debit receipts, flash sale pages) saved in uploads/evidence/<report_id>/
-- Real verification votes, comments, tags, history timelines, discussions, and risk breakdowns
+- Real verification votes, comments, tags, history timelines, and risk breakdowns
 """
 import hashlib
 import os
@@ -344,9 +344,6 @@ def seed_database():
     # 1. Clear dynamic tables in reverse FK order
     print("Clearing dynamic data (posts, votes, evidence, comments, user accounts)...")
     tables_to_clear = [
-        "discussion_votes",
-        "discussion_replies",
-        "website_discussions",
         "appeal_evidence",
         "appeals",
         "risk_score_breakdowns",
@@ -915,21 +912,6 @@ def seed_database():
         )
 
         report_count += 1
-
-    # 5. Insert Website Forum Discussions
-    print("Seeding website discussion threads...")
-    featured_wids = []
-    cur.execute("SELECT BIN_TO_UUID(id) AS id, domain FROM website_urls LIMIT 5")
-    for w_row in cur.fetchall():
-        cur.execute(
-            "INSERT INTO website_discussions (id, website_url_id, author_id, title, body, upvotes, reply_count) "
-            "VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, 8, 2)",
-            (
-                w_row["id"], user_map["vikram.hunter@scamalert.in"],
-                f"Technical Analysis and Infrastructure Breakdown for {w_row['domain']}",
-                f"We analyzed the DNS records, hosting ASNs, and payment gateways associated with {w_row['domain']}. It belongs to an active credential-harvesting cluster. Stay alert.",
-            )
-        )
 
     conn.commit()
     cur.close()

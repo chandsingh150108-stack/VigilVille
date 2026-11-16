@@ -6,9 +6,6 @@
 USE scamalert;
 
 -- Drop tables in reverse FK order
-DROP TABLE IF EXISTS discussion_votes;
-DROP TABLE IF EXISTS discussion_replies;
-DROP TABLE IF EXISTS website_discussions;
 DROP TABLE IF EXISTS platform_config;
 DROP TABLE IF EXISTS audit_events;
 DROP TABLE IF EXISTS rate_limit_events;

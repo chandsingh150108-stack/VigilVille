@@ -8,7 +8,7 @@ Images live in seed_images/ and are copied into the running web container
 (`crm-web-1:/app/uploads/evidence/...`) via `docker cp`, because the
 `web` service has no bind mounts. Evidence rows store real sha256/size.
 
-WARNING: deletes all rows in report/website/discussion/event tables and
+WARNING: deletes all rows in report/website/event tables and
 resets user counters. Users, categories, tags and platform_config are kept.
 """
 import hashlib
@@ -102,8 +102,7 @@ EVIDENCE = [
 
 WIPE_ORDER = ["appeal_evidence", "appeals", "verification_votes", "report_evidence",
               "report_comments", "report_history", "report_tags", "fraud_reports",
-              "risk_score_breakdowns", "discussion_votes", "discussion_replies",
-              "website_discussions", "website_urls", "reputation_events",
+              "risk_score_breakdowns", "website_urls", "reputation_events",
               "rate_limit_events", "audit_events"]
 
 

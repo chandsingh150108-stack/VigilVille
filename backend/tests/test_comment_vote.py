@@ -13,7 +13,7 @@ def test_vote_requires_auth(client):
 def test_vote_invalid_vote_value(client, monkeypatch):
     """vote_value must be -1 or 1."""
     import backend.auth_guard as g
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
 
     for val in [0, 2, -2, "up", None]:
         resp = client.post("/api/reports/aaa/comments/bbb/vote",
@@ -25,7 +25,7 @@ def test_vote_invalid_vote_value(client, monkeypatch):
 def test_vote_missing_field(client, monkeypatch):
     """Missing vote_value returns 400."""
     import backend.auth_guard as g
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
 
     resp = client.post("/api/reports/aaa/comments/bbb/vote", json={})
     assert resp.status_code == 400
@@ -35,7 +35,7 @@ def test_vote_comment_not_found(client, monkeypatch):
     """Non-existent comment returns 404."""
     import backend.auth_guard as g
     import backend.routes.comment_vote as cv
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
     monkeypatch.setattr(cv.db, "query_one", lambda *a, **k: None)
 
     resp = client.post("/api/reports/aaa/comments/bbb/vote",
@@ -44,11 +44,22 @@ def test_vote_comment_not_found(client, monkeypatch):
 
 
 def test_vote_insufficient_reputation(client, monkeypatch):
-    """Users with reputation < 40 cannot vote (trigger error mapped to 403)."""
+    """Users with reputation < 40 are rejected by the route gate."""
+    import backend.auth_guard as g
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 39})
+
+    resp = client.post("/api/reports/aaa/comments/bbb/vote",
+                       json={"vote_value": 1})
+    assert resp.status_code == 403
+    assert "trusted" in resp.get_json()["error"].lower()
+
+
+def test_vote_trigger_insufficient_reputation(client, monkeypatch):
+    """Trigger error remains mapped to 403 if the score changes mid-request."""
     import backend.auth_guard as g
     import backend.routes.comment_vote as cv
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
-    monkeypatch.setattr(cv.db, "query_one", lambda *a, **k: {"id": "comment-id"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
+    monkeypatch.setattr(cv.db, "query_one", lambda *a, **k: {"id": "comment-id", "author_id": "other"})
     monkeypatch.setattr(cv.db, "query", lambda *a, **k: (_ for _ in ()).throw(
         Exception("Insufficient reputation to vote on comments (minimum tier: trusted, score: 40)")
     ))
@@ -58,11 +69,93 @@ def test_vote_insufficient_reputation(client, monkeypatch):
     assert resp.status_code == 403
 
 
+def test_vote_self_rejected(client, monkeypatch):
+    """Comment authors cannot vote on their own comments."""
+    import backend.auth_guard as g
+    import backend.routes.comment_vote as cv
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
+    monkeypatch.setattr(cv.db, "query_one", lambda *a, **k: {"id": "comment-id", "author_id": "u1"})
+
+    resp = client.post("/api/reports/aaa/comments/bbb/vote",
+                       json={"vote_value": 1})
+    assert resp.status_code == 403
+    assert "own comment" in resp.get_json()["error"].lower()
+
+
+def test_vote_moderator_role_low_score_allowed(client, monkeypatch):
+    """Moderator role bypasses the score threshold."""
+    import backend.auth_guard as g
+    import backend.routes.comment_vote as cv
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "moderator", "reputation_score": 0})
+
+    calls = {"n": 0}
+    def fake_query_one(*a, **k):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {"id": "comment-id", "author_id": "other"}
+        return {"up": 1, "down": 0}
+
+    monkeypatch.setattr(cv.db, "query_one", fake_query_one)
+    monkeypatch.setattr(cv.db, "query", lambda *a, **k: None)
+
+    resp = client.post("/api/reports/aaa/comments/bbb/vote",
+                       json={"vote_value": 1})
+    assert resp.status_code == 200
+
+
+def test_vote_expert_success(client, monkeypatch):
+    """Expert tier (score 75) can vote."""
+    import backend.auth_guard as g
+    import backend.routes.comment_vote as cv
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 75})
+
+    calls = {"n": 0}
+    def fake_query_one(*a, **k):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {"id": "comment-id", "author_id": "other"}
+        return {"up": 4, "down": 1}
+
+    monkeypatch.setattr(cv.db, "query_one", fake_query_one)
+    monkeypatch.setattr(cv.db, "query", lambda *a, **k: None)
+
+    resp = client.post("/api/reports/aaa/comments/bbb/vote",
+                       json={"vote_value": 1})
+    assert resp.status_code == 200
+    assert resp.get_json()["upvotes"] == 4
+
+
+def test_vote_updates_comment_count_cache(client, monkeypatch):
+    """The denormalized comment counters are refreshed after a changed vote."""
+    import backend.auth_guard as g
+    import backend.routes.comment_vote as cv
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
+
+    calls = {"n": 0}
+    def fake_query_one(*a, **k):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {"id": "comment-id", "author_id": "other"}
+        return {"up": 5, "down": 2}
+
+    queries = []
+    def fake_query(sql, params=None):
+        queries.append(sql)
+
+    monkeypatch.setattr(cv.db, "query_one", fake_query_one)
+    monkeypatch.setattr(cv.db, "query", fake_query)
+
+    resp = client.post("/api/reports/aaa/comments/bbb/vote",
+                       json={"vote_value": -1})
+    assert resp.status_code == 200
+    assert any("UPDATE report_comments SET upvotes" in q for q in queries)
+
+
 def test_vote_daily_limit(client, monkeypatch):
     """Daily vote limit returns 429."""
     import backend.auth_guard as g
     import backend.routes.comment_vote as cv
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
     monkeypatch.setattr(cv.db, "query_one", lambda *a, **k: {"id": "comment-id"})
     monkeypatch.setattr(cv.db, "query", lambda *a, **k: (_ for _ in ()).throw(
         Exception("Daily vote limit reached (50 votes per day)")
@@ -77,7 +170,7 @@ def test_vote_upvote_success(client, monkeypatch):
     """Successful upvote returns counts and user_vote."""
     import backend.auth_guard as g
     import backend.routes.comment_vote as cv
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
 
     calls = {"n": 0}
     def fake_query_one(*a, **k):
@@ -104,7 +197,7 @@ def test_vote_downvote_success(client, monkeypatch):
     """Successful downvote returns counts and user_vote."""
     import backend.auth_guard as g
     import backend.routes.comment_vote as cv
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
 
     calls = {"n": 0}
     def fake_query_one(*a, **k):
@@ -131,7 +224,7 @@ def test_vote_change_vote(client, monkeypatch):
     """Changing vote (upvote -> downvote) updates correctly."""
     import backend.auth_guard as g
     import backend.routes.comment_vote as cv
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
 
     calls = {"n": 0}
     def fake_query_one(*a, **k):
@@ -155,7 +248,7 @@ def test_rate_limit_enforced(client, monkeypatch):
     """Rate limit returns 429."""
     import backend.auth_guard as g
     import backend.routes.comment_vote as cv
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
     monkeypatch.setattr(cv.db, "query_one", lambda *a, **k: {"id": "comment-id"})
     monkeypatch.setattr(cv.rate_limit, "check_rate_limit",
                         lambda *a, **k: {"allowed": False, "remaining": 0})
@@ -190,7 +283,7 @@ def test_report_detail_includes_user_vote_authenticated(client, monkeypatch):
     """Authenticated users get their vote_value in user_vote."""
     import backend.auth_guard as g
     import backend.routes.report_detail as rd
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
+    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user", "reputation_score": 60})
     monkeypatch.setattr(rd.auth_guard, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
     monkeypatch.setattr(rd.db, "query_one", lambda *a, **k: {
         "id": "report-id", "title": "Test", "description": "Desc",

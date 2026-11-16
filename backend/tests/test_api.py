@@ -142,14 +142,6 @@ def test_anon_comment_201(client, monkeypatch):
     assert body["comment"]["user_name"] == "Anonymous"
 
 
-def test_discussion_vote_validation(client, monkeypatch):
-    import backend.auth_guard as g
-    monkeypatch.setattr(g, "current_user", lambda: {"id": "u1", "email": "a@b.c", "name": "A", "role": "user"})
-    assert client.post("/api/discussions/vote", json={}).status_code == 400
-    assert client.post("/api/discussions/vote", json={"target_type": "x", "target_id": "y", "vote_value": 1}).status_code == 400
-    assert client.post("/api/discussions/vote", json={"target_type": "reply", "target_id": "y", "vote_value": 5}).status_code == 400
-
-
 def test_admin_401(client):
     assert client.get("/api/admin/reports").status_code == 401
     assert client.get("/api/admin/appeals").status_code == 401

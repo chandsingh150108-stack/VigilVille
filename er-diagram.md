@@ -1,7 +1,7 @@
 # ScamAlert — Entity Relationship Diagram
 
-> 20 tables, 28 foreign key relationships. Render this file in GitHub, VS Code (Mermaid extension), or any Mermaid-compatible viewer.
-> Note: table/relationship structure matches the frozen `sql/01_schema.sql`; a few column *names* below use the original design wording (`users.display_name` → `name`, `password_hash` → `password`, `is_email_verified` → `emailVerified`, plus a `better_auth_id` column). When in doubt, the SQL file is authoritative.
+> 18 tables, 24 foreign key relationships. Render this file in GitHub, VS Code (Mermaid extension), or any Mermaid-compatible viewer.
+> Note: table/relationship structure matches `sql/01_schema.sql`; a few column *names* below use the original design wording (`users.display_name` → `name`, `password_hash` → `password`, `is_email_verified` → `emailVerified`, plus a `better_auth_id` column). When in doubt, the SQL file is authoritative.
 
 ```mermaid
 erDiagram
@@ -135,7 +135,17 @@ erDiagram
         BINARY parent_id FK "self-ref"
         TEXT body "NOT NULL"
         BOOLEAN is_deleted
+        INT upvotes "NOT NULL, DEFAULT 0"
+        INT downvotes "NOT NULL, DEFAULT 0"
         TIMESTAMP created_at
+    }
+
+    comment_votes {
+        BINARY id PK "UUIDv7"
+        BINARY user_id FK "NOT NULL"
+        BINARY comment_id FK "NOT NULL"
+        TINYINT vote_value "-1 or +1"
+        TIMESTAMP created_at "NOT NULL"
     }
 
     report_history {
@@ -216,46 +226,6 @@ erDiagram
         TIMESTAMP updated_at
     }
 
-    website_discussions {
-        BINARY id PK "UUIDv7"
-        BINARY website_url_id FK "NOT NULL"
-        BINARY author_id FK "NOT NULL"
-        VARCHAR title "NOT NULL"
-        TEXT body "NOT NULL"
-        BOOLEAN is_pinned
-        BOOLEAN is_locked
-        BOOLEAN is_deleted
-        INT upvotes
-        INT downvotes
-        INT reply_count
-        TIMESTAMP last_activity_at
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-
-    discussion_replies {
-        BINARY id PK "UUIDv7"
-        BINARY discussion_id FK "NOT NULL"
-        BINARY author_id FK "NOT NULL"
-        BINARY parent_id FK "self-ref, NULL = top-level"
-        TEXT body "NOT NULL"
-        BOOLEAN is_deleted
-        INT upvotes
-        INT downvotes
-        INT depth "max 5 levels"
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-
-    discussion_votes {
-        BINARY id PK "UUIDv7"
-        BINARY user_id FK "NOT NULL"
-        ENUM target_type "discussion|reply"
-        BINARY target_id FK "NOT NULL"
-        TINYINT vote_value "-1 or +1"
-        TIMESTAMP created_at
-    }
-
     %% ── Core relationships ──
     users ||--o{ fraud_reports : "submits"
     categories ||--o{ fraud_reports : "categorizes"
@@ -279,6 +249,10 @@ erDiagram
     users ||--o{ report_comments : "writes"
     report_comments ||--o{ report_comments : "replies_to"
 
+    %% ── Comment votes ──
+    users ||--o{ comment_votes : "votes_on"
+    report_comments ||--o{ comment_votes : "receives"
+
     %% ── Audit trail ──
     fraud_reports ||--o{ report_history : "tracked_by"
     users ||--o{ report_history : "acts_on"
@@ -299,14 +273,6 @@ erDiagram
 
     %% ── Global audit ──
     users ||--o{ audit_events : "audited_by"
-
-    %% ── Forum ──
-    website_urls ||--o{ website_discussions : "discussed_in"
-    users ||--o{ website_discussions : "creates"
-    website_discussions ||--o{ discussion_replies : "receives"
-    users ||--o{ discussion_replies : "writes"
-    discussion_replies ||--o{ discussion_replies : "replies_to"
-    users ||--o{ discussion_votes : "votes_with"
 ```
 
 ## Relationship Summary
@@ -326,20 +292,16 @@ erDiagram
 | 11 | fraud_reports | report_comments | report_id | 1:N |
 | 12 | users | report_comments | user_id | 1:N |
 | 13 | report_comments | report_comments | parent_id | self-ref |
-| 14 | fraud_reports | report_history | report_id | 1:N |
-| 15 | users | report_history | actor_id | 1:N |
-| 16 | website_urls | risk_score_breakdowns | website_url_id | 1:N |
-| 17 | fraud_reports | appeals | report_id | 1:N |
-| 18 | users | appeals | resolved_by | 1:N |
-| 19 | appeals | appeal_evidence | appeal_id | 1:N |
-| 20 | users | reputation_events | user_id | 1:N |
-| 21 | users | rate_limit_events | user_id | 1:N |
-| 22 | users | audit_events | actor_id | 1:N |
-| 23 | website_urls | website_discussions | website_url_id | 1:N |
-| 24 | users | website_discussions | author_id | 1:N |
-| 25 | website_discussions | discussion_replies | discussion_id | 1:N |
-| 26 | users | discussion_replies | author_id | 1:N |
-| 27 | discussion_replies | discussion_replies | parent_id | self-ref |
-| 28 | users | discussion_votes | user_id | 1:N |
+| 14 | users | comment_votes | user_id | 1:N |
+| 15 | report_comments | comment_votes | comment_id | 1:N |
+| 16 | fraud_reports | report_history | report_id | 1:N |
+| 17 | users | report_history | actor_id | 1:N |
+| 18 | website_urls | risk_score_breakdowns | website_url_id | 1:N |
+| 19 | fraud_reports | appeals | report_id | 1:N |
+| 20 | users | appeals | resolved_by | 1:N |
+| 21 | appeals | appeal_evidence | appeal_id | 1:N |
+| 22 | users | reputation_events | user_id | 1:N |
+| 23 | users | rate_limit_events | user_id | 1:N |
+| 24 | users | audit_events | actor_id | 1:N |
 
-**Total: 28 foreign key relationships across 20 tables**
+**Total: 24 foreign key relationships across 18 tables**

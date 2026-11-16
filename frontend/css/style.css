@@ -1,10 +1,10 @@
 /* ==========================================================================
-   ScamAlert shared design system (vanilla HTML/CSS/JS).
+   VigilVille.com shared design system (vanilla HTML/CSS/JS).
    1. Variables / Theme   2. Reset / Base   3. Typography   4. Layout
    5. Header / Navigation  6. Buttons       7. Forms        8. Cards
    9. Tables              10. Pills / Tags  11. Alerts      12. Loading states
    13. Modal              14. Special components            15. Responsive
-   Identity: orange primary #ea580c, compact panels, system font stack.
+   Identity: serif wordmark, orange primary #ea580c, compact panels.
    ========================================================================== */
 
 /* 1. Variables / Theme ------------------------------------------------------ */
@@ -21,6 +21,7 @@
   --primary: #ea580c;
   --primary-hover: #c2410c;
   --primary-contrast: #ffffff;
+  --logo-dot: #c2410c;
   --focus-ring: rgba(234, 88, 12, 0.35);
   --link: #2563eb;
   --link-hover: #ea580c;
@@ -45,6 +46,7 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
+  --logo-dot: #fb923c;
   --bg: #1c1917;
   --surface: #292524;
   --surface-alt: #3a2f28;
@@ -133,7 +135,17 @@ header.top .wrap {
   min-height: 3.5rem;
   padding: 0 var(--space-md);
 }
-.logo { font-weight: 800; font-size: 1.15rem; color: var(--primary); text-decoration: none; white-space: nowrap; }
+.logo {
+  font-family: ui-serif, "New York", Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.logo:hover { color: var(--text); }
+.logo-dot { color: var(--logo-dot); }
 nav.main { display: flex; align-items: center; gap: 0.25rem; font-size: 0.9rem; }
 nav.main a {
   text-decoration: none;
@@ -276,10 +288,6 @@ table.tbl tbody tr:hover, table.tbl tr:hover td { background: var(--surface-alt)
 [data-theme="dark"] .pill.trusted { background: #1e3a5f; color: #93c5fd; }
 [data-theme="dark"] .pill.new { background: #14532d; color: #86efac; }
 [data-theme="dark"] .pill.newcomer { background: #3a2f28; color: #e7c9a9; }
-/* Tier hooks for JS-injected inline styles (discussion-detail tierColor). */
-[data-theme="dark"] .pill.tier-moderator { background: #4c1d1d !important; color: #fca5a5 !important; }
-[data-theme="dark"] .pill.tier-expert { background: #4a2c14 !important; color: #fdba74 !important; }
-[data-theme="dark"] .pill.tier-other { background: #3a2f28 !important; color: #e7c9a9 !important; }
 .tag {
   display: inline-block;
   background: var(--surface-alt);

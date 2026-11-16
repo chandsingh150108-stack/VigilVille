@@ -53,6 +53,14 @@ erDiagram
         BINARY report_id FK
         BINARY user_id FK
         BINARY parent_id FK
+        INT upvotes
+        INT downvotes
+    }
+    comment_votes {
+        BINARY id PK
+        BINARY user_id FK
+        BINARY comment_id FK
+        TINYINT vote_value
     }
     report_history {
         BINARY id PK
@@ -100,24 +108,6 @@ erDiagram
         VARCHAR key PK
         JSON value
     }
-    website_discussions {
-        BINARY id PK
-        BINARY website_url_id FK
-        BINARY author_id FK
-        VARCHAR title
-    }
-    discussion_replies {
-        BINARY id PK
-        BINARY discussion_id FK
-        BINARY author_id FK
-        BINARY parent_id FK
-    }
-    discussion_votes {
-        BINARY id PK
-        BINARY user_id FK
-        ENUM target_type
-        BINARY target_id FK
-    }
 
     users ||--o{ fraud_reports : "submits"
     categories ||--o{ fraud_reports : "categorizes"
@@ -132,6 +122,8 @@ erDiagram
     fraud_reports ||--o{ report_comments : "discusses"
     users ||--o{ report_comments : "writes"
     report_comments ||--o{ report_comments : "replies_to"
+    users ||--o{ comment_votes : "votes_on"
+    report_comments ||--o{ comment_votes : "receives"
     fraud_reports ||--o{ report_history : "tracked_by"
     users ||--o{ report_history : "acts_on"
     website_urls ||--o{ risk_score_breakdowns : "scored_by"
@@ -141,9 +133,3 @@ erDiagram
     users ||--o{ reputation_events : "earns"
     users ||--o{ rate_limit_events : "limited_by"
     users ||--o{ audit_events : "audited_by"
-    website_urls ||--o{ website_discussions : "discussed_in"
-    users ||--o{ website_discussions : "creates"
-    website_discussions ||--o{ discussion_replies : "receives"
-    users ||--o{ discussion_replies : "writes"
-    discussion_replies ||--o{ discussion_replies : "replies_to"
-    users ||--o{ discussion_votes : "votes_with"

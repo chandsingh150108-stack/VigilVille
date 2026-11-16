@@ -4,7 +4,7 @@ async function refreshUserMenu() {
   if (!slot) return;
   const { ok, data } = await window.App.api("/api/me");
   if (!ok || !data || !data.user) {
-    slot.innerHTML = '<button class="btn" id="signin-btn">Sign In</button><div class="modal-backdrop" id="auth-backdrop"><div class="modal" id="auth-modal"></div></div>';
+    slot.innerHTML = '<button class="btn" id="signin-btn">Sign in</button><div class="modal-backdrop" id="auth-backdrop"><div class="modal" id="auth-modal"></div></div>';
     document.getElementById("signin-btn").onclick = function () { openAuthModal("signin"); };
     document.getElementById("auth-backdrop").onclick = function (e) { if (e.target.id === "auth-backdrop") closeAuthModal(); };
     return;

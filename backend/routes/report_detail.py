@@ -36,8 +36,8 @@ def get_report(rid):
 
         if current_user_id:
             comments = db.query(
-                "SELECT rc.*, BIN_TO_UUID(rc.id) AS id, u.name AS user_name, "
-                "u.reputation_tier AS user_tier, "
+                "SELECT rc.*, BIN_TO_UUID(rc.id) AS id, BIN_TO_UUID(rc.user_id) AS author_id, "
+                "u.name AS user_name, u.reputation_tier AS user_tier, "
                 "COALESCE(cv.vote_value, 0) AS user_vote "
                 "FROM report_comments rc "
                 "JOIN users u ON u.id = rc.user_id "
@@ -47,8 +47,8 @@ def get_report(rid):
                 (current_user_id, rid)) or []
         else:
             comments = db.query(
-                "SELECT rc.*, BIN_TO_UUID(rc.id) AS id, u.name AS user_name, "
-                "u.reputation_tier AS user_tier, 0 AS user_vote "
+                "SELECT rc.*, BIN_TO_UUID(rc.id) AS id, BIN_TO_UUID(rc.user_id) AS author_id, "
+                "u.name AS user_name, u.reputation_tier AS user_tier, 0 AS user_vote "
                 "FROM report_comments rc "
                 "JOIN users u ON u.id = rc.user_id "
                 "WHERE rc.report_id = UUID_TO_BIN(%s) ORDER BY rc.created_at ASC",

@@ -27,14 +27,23 @@ def vote_comment(rid, cid):
     if vote_value not in (-1, 1):
         return error_response("Invalid vote_value. Must be -1 or 1", 400)
 
+    # Only trusted/expert/moderator tiers (score >= 40) or moderator/admin roles.
+    # The DB trigger enforces this too, but checking here gives a clean 403 and
+    # covers the ON DUPLICATE KEY UPDATE path.
+    if int(sess.get("reputation_score") or 0) < 40 and sess.get("role") not in ("moderator", "admin"):
+        return error_response("Only trusted, expert, and moderator members can vote on comments", 403)
+
     # Verify comment exists and belongs to report
     try:
         comment = db.query_one(
-            "SELECT id FROM report_comments WHERE id = UUID_TO_BIN(%s) AND report_id = UUID_TO_BIN(%s)",
+            "SELECT id, BIN_TO_UUID(user_id) AS author_id FROM report_comments "
+            "WHERE id = UUID_TO_BIN(%s) AND report_id = UUID_TO_BIN(%s)",
             (cid, rid)
         )
         if not comment:
             return error_response("Comment not found", 404)
+        if comment.get("author_id") and str(comment["author_id"]) == str(sess["id"]):
+            return error_response("You cannot vote on your own comment", 403)
     except Exception as e:
         return error_response(str(e), 500)
 
@@ -61,6 +70,15 @@ def vote_comment(rid, cid):
         )
         up = int((agg or {}).get("up", 0) or 0)
         down = int((agg or {}).get("down", 0) or 0)
+
+        # The AFTER INSERT trigger maintains these counters, but a changed vote
+        # goes through ON DUPLICATE KEY UPDATE and never fires it. Refresh the
+        # denormalized counts here so a reload is always correct.
+        db.query(
+            "UPDATE report_comments SET upvotes = %s, downvotes = %s "
+            "WHERE id = UUID_TO_BIN(%s)",
+            (up, down, cid),
+        )
 
         audit.log_audit_event(sess["id"], "comment_vote", "report_comments", cid,
                               {"vote_value": vote_value})
